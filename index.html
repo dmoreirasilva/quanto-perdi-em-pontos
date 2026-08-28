@@ -133,26 +133,19 @@ footer b{color:var(--primary)}
       <h2 id="tituloCaptura">Quer saber para onde esses pontos te levariam?</h2>
       <p class="intro" id="introCaptura">Eu analiso seu caso e te mostro os destinos possíveis com o que você já tem hoje. Sem custo.</p>
 
-      <form action="https://formsubmit.co/d.moreira.silva2010@gmail.com" method="POST">
-        <input type="hidden" name="_subject" value="Novo lead — Calculadora de Milhas">
-        <input type="hidden" name="_captcha" value="false">
-        <input type="hidden" name="_template" value="table">
-        <input type="hidden" name="Gasto mensal declarado" id="hGasto">
-        <input type="hidden" name="Anos acumulando" id="hAnos">
-        <input type="hidden" name="Aproveitamento atual" id="hUso">
-        <input type="hidden" name="Pontos perdidos (estimado)" id="hPts">
-        <input type="hidden" name="Valor perdido (estimado)" id="hValor">
-        <input type="hidden" name="Classificacao" id="hClasse">
+      <form id="formLead">
+        <input type="text" name="website" id="website" tabindex="-1" autocomplete="off"
+               style="position:absolute;left:-9999px" aria-hidden="true">
 
         <div class="campo"><label for="nome">Seu nome</label>
-          <input type="text" id="nome" name="Nome" required autocomplete="name"></div>
+          <input type="text" id="nome" required autocomplete="name"></div>
         <div class="campo"><label for="email">E-mail</label>
-          <input type="email" id="email" name="E-mail" required autocomplete="email"></div>
+          <input type="email" id="email" required autocomplete="email"></div>
         <div class="campo"><label for="zap">WhatsApp</label>
-          <input type="tel" id="zap" name="WhatsApp" required placeholder="(00) 00000-0000" autocomplete="tel"></div>
+          <input type="tel" id="zap" required placeholder="(00) 00000-0000" autocomplete="tel"></div>
 
-        <button type="submit" class="btn">Quero ver meus destinos</button>
-        <p class="mini">Seus dados não são compartilhados. Retorno em até 1 dia útil.</p>
+        <button type="submit" class="btn" id="btnEnviar">Quero ver meus destinos</button>
+        <p class="mini" id="statusEnvio">Seus dados não são compartilhados. Retorno em até 1 dia útil.</p>
       </form>
     </div>
 
@@ -227,8 +220,46 @@ document.getElementById('calcular').onclick = () => {
   document.getElementById('hClasse').value =
     gastoSel >= 22000 ? 'QUENTE — ICP pleno' : gastoSel >= 10000 ? 'MORNO — perto do ICP' : 'FRIO — abaixo do ICP';
 
+  window.__calculo = {
+    gastoMensal: gastoSel, anosAcumulando: anos,
+    percentualNaoUsado: naoUsado, valorPerdido: Math.round(valorPerdido),
+    pontosPerdidos: Math.round(ptsPerdidos),
+  };
+
   document.getElementById('resultado').style.display = 'block';
   document.getElementById('resultado').scrollIntoView({behavior:'smooth',block:'start'});
+};
+
+const API = 'https://www.portaldiegomilhas.com.br/api/leads';
+document.getElementById('formLead').onsubmit = async e => {
+  e.preventDefault();
+  const btn = document.getElementById('btnEnviar');
+  const aviso = document.getElementById('statusEnvio');
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  try {
+    const r = await fetch(API, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        negocio: 'MILHAS',
+        origem: 'calculadora-milhas',
+        nome: document.getElementById('nome').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        whatsapp: document.getElementById('zap').value.trim(),
+        website: document.getElementById('website').value,
+        respostas: window.__calculo || {},
+      }),
+    });
+    if (!r.ok) throw new Error('resposta ' + r.status);
+    document.querySelector('.captura').innerHTML =
+      '<h2>Recebido.</h2><p class="intro">O Diego vai analisar seu caso e te chamar no WhatsApp em até 1 dia útil ' +
+      'com os destinos possíveis usando o que você já tem.</p>';
+  } catch (err) {
+    // Portal fora do ar não pode custar o lead: cai para o e-mail direto.
+    btn.disabled = false; btn.textContent = 'Quero ver meus destinos';
+    aviso.innerHTML = 'Não consegui enviar agora. Me chame no WhatsApp: ' +
+      '<a href="https://wa.me/5544988328329" style="color:#2196C4;font-weight:600">(44) 98832-8329</a>';
+  }
 };
 </script>
 </body>
