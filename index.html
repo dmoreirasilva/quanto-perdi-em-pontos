@@ -212,16 +212,11 @@ document.getElementById('calcular').onclick = () => {
   document.querySelector('.captura').style.display = qualificado ? 'block' : 'none';
 
   const rotulos = {4000:'Até R$5 mil',10000:'R$5–15 mil',22000:'R$15–30 mil',45000:'Acima de R$30 mil'};
-  document.getElementById('hGasto').value = rotulos[gastoSel];
-  document.getElementById('hAnos').value = anos + ' anos';
-  document.getElementById('hUso').value = document.getElementById('uso').selectedOptions[0].text;
-  document.getElementById('hPts').value = num(ptsPerdidos) + ' pts';
-  document.getElementById('hValor').value = brl(valorPerdido);
-  document.getElementById('hClasse').value =
-    gastoSel >= 22000 ? 'QUENTE — ICP pleno' : gastoSel >= 10000 ? 'MORNO — perto do ICP' : 'FRIO — abaixo do ICP';
+  const classe = gastoSel >= 22000 ? 'QUENTE — ICP pleno' : gastoSel >= 10000 ? 'MORNO — perto do ICP' : 'FRIO — abaixo do ICP';
 
   window.__calculo = {
-    gastoMensal: gastoSel, anosAcumulando: anos,
+    gastoMensal: gastoSel, faixaGasto: rotulos[gastoSel], anosAcumulando: anos,
+    usoAtual: document.getElementById('uso').selectedOptions[0].text, classe,
     percentualNaoUsado: naoUsado, valorPerdido: Math.round(valorPerdido),
     pontosPerdidos: Math.round(ptsPerdidos),
   };
