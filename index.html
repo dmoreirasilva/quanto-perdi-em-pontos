@@ -33,11 +33,7 @@ input[type=text],input[type=email],input[type=tel],select{
   width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:10px;
   font-size:1rem;font-family:inherit;background:#fff;color:var(--text);outline:none}
 input:focus,select:focus{border-color:var(--sky);box-shadow:0 0 0 3px rgba(33,150,196,.13)}
-.faixa{display:flex;flex-wrap:wrap;gap:8px}
-.faixa button{flex:1 1 calc(50% - 4px);padding:13px 10px;border:1.5px solid var(--line);background:#fff;
-  border-radius:10px;font-family:inherit;font-size:.92rem;font-weight:600;color:var(--text);cursor:pointer;transition:.15s}
-.faixa button:hover{border-color:var(--sky)}
-.faixa button[aria-pressed=true]{background:var(--primary);color:#fff;border-color:var(--primary)}
+input#gastoInput{font-variant-numeric:tabular-nums;font-weight:600}
 
 .btn{width:100%;padding:16px;border:0;border-radius:100px;background:var(--accent);color:var(--primary);
   font-family:inherit;font-weight:800;font-size:1rem;cursor:pointer;margin-top:26px;transition:.15s}
@@ -79,15 +75,10 @@ footer b{color:var(--primary)}
 <main class="wrap">
   <div class="card" id="form">
     <div class="campo">
-      <label>Quanto você gasta no cartão de crédito por mês?
-        <span class="dica">Some todos os cartões — pessoal e da empresa, se passam no seu CPF/CNPJ.</span>
+      <label for="gastoInput">Quanto você gasta no cartão de crédito por mês?
+        <span class="dica">Some todos os cartões — pessoal e da empresa, se passam no seu CPF/CNPJ. Digite o valor aproximado.</span>
       </label>
-      <div class="faixa" id="gasto">
-        <button type="button" data-v="4000">Até R$ 5 mil</button>
-        <button type="button" data-v="10000">R$ 5 a 15 mil</button>
-        <button type="button" data-v="22000">R$ 15 a 30 mil</button>
-        <button type="button" data-v="45000">Acima de R$ 30 mil</button>
-      </div>
+      <input type="text" id="gastoInput" inputmode="numeric" placeholder="R$ 0" autocomplete="off">
     </div>
 
     <div class="campo">
@@ -175,11 +166,21 @@ let gastoSel = null;
 const brl = n => n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
 const num = n => Math.round(n).toLocaleString('pt-BR');
 
-document.querySelectorAll('#gasto button').forEach(b => b.onclick = () => {
-  document.querySelectorAll('#gasto button').forEach(x => x.setAttribute('aria-pressed','false'));
-  b.setAttribute('aria-pressed','true');
-  gastoSel = +b.dataset.v;
-  document.getElementById('calcular').disabled = false;
+// Campo livre: o cliente digita o valor por extenso (ex: 18000) e a gente
+// formata como moeda em tempo real. O cálculo usa o número exato digitado,
+// não mais o valor médio de uma faixa.
+const gastoInput = document.getElementById('gastoInput');
+gastoInput.addEventListener('input', () => {
+  const digitos = gastoInput.value.replace(/\D/g,'');
+  if (!digitos) {
+    gastoSel = null;
+    gastoInput.value = '';
+    document.getElementById('calcular').disabled = true;
+    return;
+  }
+  gastoSel = parseInt(digitos, 10);
+  gastoInput.value = 'R$ ' + gastoSel.toLocaleString('pt-BR');
+  document.getElementById('calcular').disabled = gastoSel <= 0;
 });
 
 document.getElementById('calcular').onclick = () => {
@@ -211,11 +212,10 @@ document.getElementById('calcular').onclick = () => {
   document.getElementById('abaixo').style.display = qualificado ? 'none' : 'block';
   document.querySelector('.captura').style.display = qualificado ? 'block' : 'none';
 
-  const rotulos = {4000:'Até R$5 mil',10000:'R$5–15 mil',22000:'R$15–30 mil',45000:'Acima de R$30 mil'};
   const classe = gastoSel >= 22000 ? 'QUENTE — ICP pleno' : gastoSel >= 10000 ? 'MORNO — perto do ICP' : 'FRIO — abaixo do ICP';
 
   window.__calculo = {
-    gastoMensal: gastoSel, faixaGasto: rotulos[gastoSel], anosAcumulando: anos,
+    gastoMensal: gastoSel, faixaGasto: brl(gastoSel) + '/mês', anosAcumulando: anos,
     usoAtual: document.getElementById('uso').selectedOptions[0].text, classe,
     percentualNaoUsado: naoUsado, valorPerdido: Math.round(valorPerdido),
     pontosPerdidos: Math.round(ptsPerdidos),
