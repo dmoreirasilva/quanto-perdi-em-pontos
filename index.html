@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Quanto você já perdeu em pontos? · Diego Moreira</title>
-<meta name="description" content="Descubra em 30 segundos quantas viagens você deixou de fazer com os pontos que acumulou e não usou.">
+<meta name="description" content="Descubra em 30 segundos quantos pontos seu cartão deixa de gerar todo mês por falta de bonificação.">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700;800&display=swap');
 :root{
@@ -67,8 +67,8 @@ footer b{color:var(--primary)}
 <header>
   <div class="wrap">
     <div class="marca">Diego Moreira · Gestor de Viagens com Milhas</div>
-    <h1>Quanto você já perdeu<br>em <em>viagens não feitas</em>?</h1>
-    <p>Seu cartão gera pontos todo mês. Se você não usa, eles viram nada. Descubra o tamanho do desperdício em 30 segundos.</p>
+    <h1>Quanto você já perdeu<br>por <em>não bonificar</em>?</h1>
+    <p>Todo cartão gera pontos. Sem estratégia de bonificação, você gera uma fração do que poderia. Descubra a diferença em 30 segundos.</p>
   </div>
 </header>
 
@@ -81,42 +81,21 @@ footer b{color:var(--primary)}
       <input type="text" id="gastoInput" inputmode="numeric" placeholder="R$ 0" autocomplete="off">
     </div>
 
-    <div class="campo">
-      <label>Há quantos anos você acumula pontos sem usar direito?</label>
-      <select id="anos">
-        <option value="1">1 ano</option>
-        <option value="2">2 anos</option>
-        <option value="3" selected>3 anos</option>
-        <option value="5">5 anos</option>
-        <option value="8">8 anos ou mais</option>
-      </select>
-    </div>
-
-    <div class="campo">
-      <label>Do que você acumulou, quanto já virou viagem?</label>
-      <select id="uso">
-        <option value="1">Nada — nunca usei</option>
-        <option value="0.85" selected>Quase nada — usei uma vez ou outra</option>
-        <option value="0.6">Uma parte — resgato às vezes</option>
-        <option value="0.3">A maior parte — já uso bem</option>
-      </select>
-    </div>
-
     <button class="btn" id="calcular" disabled>Ver quanto eu perdi</button>
   </div>
 
   <div id="resultado">
     <div class="numerao">
-      <div class="rot">Você deixou na mesa</div>
+      <div class="rot">Você deixa na mesa por ano</div>
       <div class="valor" id="valorPerdido">—</div>
       <div class="sub" id="traducao">—</div>
     </div>
 
     <div class="detalhe">
-      <div class="li"><span>Pontos gerados no período</span><b id="ptsTotal">—</b></div>
-      <div class="li"><span>Pontos que não viraram viagem</span><b id="ptsPerdidos">—</b></div>
-      <div class="li"><span>Valor se bem resgatados</span><b id="valorBem">—</b></div>
-      <div class="li"><span>Continua perdendo por mês</span><b id="porMes">—</b></div>
+      <div class="li"><span>Pontos no cenário atual</span><b id="ptsAtual">—</b></div>
+      <div class="li"><span>Pontos no cenário bonificado</span><b id="ptsBonificado">—</b></div>
+      <div class="li"><span>Diferença por mês</span><b id="diferencaMes">—</b></div>
+      <div class="li"><span>Diferença em 12 meses</span><b id="diferencaAno">—</b></div>
     </div>
     <p class="premissas" id="premissas"></p>
 
@@ -153,13 +132,13 @@ footer b{color:var(--primary)}
 </footer>
 
 <script>
-// Premissas conservadoras e declaradas na tela — a conta precisa aguentar
-// contestação de um executivo que confere.
-const DOLAR = 5.50;        // câmbio de referência
-const PTS_USD = 1.8;       // pontos por dólar gasto — cartão premium típico
-const VALOR_MIL_BEM = 45;  // R$ por mil pontos em resgate bem feito
-                           // (16k Smiles compram passagem doméstica de R$600-840)
-const VALOR_MIL_VENDA = 15;// R$ por mil pontos apenas vendendo
+// Mesmo modelo ensinado no evento "Gastos são viagens" (lâmina "Exemplo"):
+// R$4.000/mês → 1.500 pts/mês no cenário atual, 8.000 pts/mês bonificado,
+// diferença de 6.500 pts/mês, 78.000 pts deixados na mesa em 12 meses.
+// As duas taxas abaixo reproduzem esse exemplo exatamente.
+const PTS_ATUAL_POR_REAL = 0.375;      // pontos por R$1 gasto — cartão comum, sem estratégia
+const PTS_BONIFICADO_POR_REAL = 2;     // pontos por R$1 gasto — com bonificação bem feita
+const VALOR_MIL = 25;                  // R$ por milheiro (1.000 pontos) — valor médio de mercado
 const PTS_POR_PASSAGEM = 70000; // ida e volta internacional em econômica
 
 let gastoSel = null;
@@ -184,29 +163,25 @@ gastoInput.addEventListener('input', () => {
 });
 
 document.getElementById('calcular').onclick = () => {
-  const anos = +document.getElementById('anos').value;
-  const naoUsado = +document.getElementById('uso').value;
-
-  const ptsMes = (gastoSel / DOLAR) * PTS_USD;
-  const ptsTotal = ptsMes * 12 * anos;
-  const ptsPerdidos = ptsTotal * naoUsado;
-  const valorPerdido = (ptsPerdidos / 1000) * VALOR_MIL_BEM;
-  const porMes = (ptsMes / 1000) * VALOR_MIL_BEM;
+  const ptsAtualMes = gastoSel * PTS_ATUAL_POR_REAL;
+  const ptsBonificadoMes = gastoSel * PTS_BONIFICADO_POR_REAL;
+  const diferencaMes = ptsBonificadoMes - ptsAtualMes;
+  const diferencaAno = diferencaMes * 12;
+  const valorPerdido = (diferencaAno / 1000) * VALOR_MIL;
   const qualificado = gastoSel >= 10000;
 
   document.getElementById('valorPerdido').textContent = brl(valorPerdido);
   document.getElementById('traducao').textContent =
-    'Aproximadamente ' + Math.max(1, Math.round(ptsPerdidos / PTS_POR_PASSAGEM)) +
-    ' passagens internacionais, ida e volta, que você poderia ter usado.';
-  document.getElementById('ptsTotal').textContent = num(ptsTotal) + ' pts';
-  document.getElementById('ptsPerdidos').textContent = num(ptsPerdidos) + ' pts';
-  document.getElementById('valorBem').textContent = brl(valorPerdido);
-  document.getElementById('porMes').textContent = brl(porMes) + '/mês';
+    'Aproximadamente ' + Math.max(1, Math.round(diferencaAno / PTS_POR_PASSAGEM)) +
+    ' passagem(ns) internacional(is), ida e volta, que a bonificação te daria de graça.';
+  document.getElementById('ptsAtual').textContent = num(ptsAtualMes) + ' pts/mês';
+  document.getElementById('ptsBonificado').textContent = num(ptsBonificadoMes) + ' pts/mês';
+  document.getElementById('diferencaMes').textContent = num(diferencaMes) + ' pts';
+  document.getElementById('diferencaAno').textContent = num(diferencaAno) + ' pts';
   document.getElementById('premissas').textContent =
-    `Conta: ${PTS_USD} pontos por dólar gasto (padrão de cartão premium), dólar a ` +
-    `R$ ${DOLAR.toFixed(2)}, e R$ ${VALOR_MIL_BEM} por mil pontos em resgate bem feito — ` +
-    `contra R$ ${VALOR_MIL_VENDA} se apenas vendidos. Referência: 16 mil pontos compram ` +
-    `uma passagem doméstica de R$ 600 a R$ 840. Resgates em executiva valem bem mais.`;
+    `Conta: mesma proporção ensinada no evento Gastos São Viagens — um gasto de R$4.000/mês ` +
+    `gera cerca de 1.500 pontos no cartão comum e cerca de 8.000 pontos com bonificação bem ` +
+    `feita. Valor de referência: R$ ${VALOR_MIL} por milheiro (1.000 pontos), a média de mercado.`;
 
   // Quem não bate o ICP recebe honestidade, não oferta.
   document.getElementById('abaixo').style.display = qualificado ? 'none' : 'block';
@@ -215,10 +190,10 @@ document.getElementById('calcular').onclick = () => {
   const classe = gastoSel >= 22000 ? 'QUENTE — ICP pleno' : gastoSel >= 10000 ? 'MORNO — perto do ICP' : 'FRIO — abaixo do ICP';
 
   window.__calculo = {
-    gastoMensal: gastoSel, faixaGasto: brl(gastoSel) + '/mês', anosAcumulando: anos,
-    usoAtual: document.getElementById('uso').selectedOptions[0].text, classe,
-    percentualNaoUsado: naoUsado, valorPerdido: Math.round(valorPerdido),
-    pontosPerdidos: Math.round(ptsPerdidos),
+    gastoMensal: gastoSel, faixaGasto: brl(gastoSel) + '/mês', classe,
+    ptsAtualMes: Math.round(ptsAtualMes), ptsBonificadoMes: Math.round(ptsBonificadoMes),
+    diferencaMes: Math.round(diferencaMes), diferencaAno: Math.round(diferencaAno),
+    valorPerdido: Math.round(valorPerdido),
   };
 
   document.getElementById('resultado').style.display = 'block';
